@@ -1,24 +1,41 @@
-name: Deploy to VM
+name: Deploy Laravel App
 
 on:
   push:
     branches:
       - main
 
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
 jobs:
-  deploy:
+  build-and-push:
     runs-on: ubuntu-latest
 
+    permissions:
+      contents: read
+      packages: write
+
     steps:
-      - name: Checkout código
+      - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Deploy via SSH
-        uses: appleboy/ssh-action@v1.0.3
-        with:
-          host: ${{ secrets.VM_HOST }}
-          username: ${{ secrets.VM_USER }}
-          key: ${{ secrets.VM_SSH_KEY }}
-          port: ${{ secrets.VM_PORT }}
-          script: |
-            mkdir ~/home/FUNCIONOU
+      - name: Log in to GitHub Container Registry
+        run: echo "${{ secrets.TOKEN_SECRET }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
+      - name: Build image with docker-compose
+        run: |
+          docker compose build
+          
+      - name: Tag image
+        run: |
+          docker tag ghcr.io/${{ github.repository }}:latest ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+      - name: Push image
+        run: |
+          docker push ghcr.io/${{ github.repository }}:latest
+          docker push ghcr.io/${{ github.repository }}:${{ github.sha }}
+
+            echo "Removendo imagens antigas"
+            docker image prune -f
