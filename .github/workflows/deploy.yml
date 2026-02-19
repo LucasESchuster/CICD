@@ -23,6 +23,14 @@ jobs:
         
       - name: Create .env file
         run: echo "${{ secrets.ENV_FILE }}" > ./api/.env
+
+      - name: Install packages
+        run: docker run --rm \
+              -u "$(id -u):$(id -g)" \
+              -v $(pwd):/var/www/html \
+              -w /var/www/html \
+              laravelsail/php82-composer:latest \
+              composer install --ignore-platform-reqs
         
       - name: Log in to GitHub Container Registry
         run: echo "${{ secrets.TOKEN_SECRET }}" | docker login ghcr.io -u ${{ github.actor }} --password-stdin
